@@ -27,6 +27,7 @@ import org.eclipse.zest.layouts.algorithms.RadialLayoutAlgorithm;
 import org.eclipse.zest.layouts.algorithms.TreeLayoutAlgorithm;
 
 import analysis.DeleteAnalyzer;
+import analysis.MethodAnalyzer;
 import analysis.MoveMethodAnalyzer;
 import analysis.ProjectAnalyzer;
 import graph.model.GClassNode;
@@ -46,7 +47,7 @@ public class MyGraphView {
    private GraphViewer gViewer;
    private int layout = 0;
    private Menu mPopupMenu = null;
-   private MenuItem menuItemMoveMethod = null, menuItemRefresh = null, menuItemDelete = null;
+   private MenuItem menuItemMoveMethod = null, menuItemRefresh = null, menuItemDelete = null, menuItemExpand = null;
    private GraphNode selectedSrcGraphNode = null, selectedDstGraphNode = null;
    private GraphNode prevSelectedDstGraphNode = null;
 
@@ -82,6 +83,11 @@ public class MyGraphView {
       menuItemDelete.setEnabled(false);
       addSelectionListenerMenuItemDelete();
       
+      menuItemExpand = new MenuItem(mPopupMenu, SWT.CASCADE);
+      menuItemExpand.setText("Expand");
+      menuItemExpand.setEnabled(false);
+      addSelectionListenerMenuItemExpand();
+      
    }
 
 private void addMouseListenerGraphViewer() {
@@ -89,12 +95,14 @@ private void addMouseListenerGraphViewer() {
          public void mouseDown(MouseEvent e) {
             menuItemMoveMethod.setEnabled(false);
             menuItemDelete.setEnabled(false);
+            menuItemExpand.setEnabled(false);
             resetSelectedSrcGraphNode();
 
             if (UtilNode.isMethodNode(e)) {
                System.out.println("single clicked");
                menuItemMoveMethod.setEnabled(true);
                menuItemDelete.setEnabled(true);
+               menuItemExpand.setEnabled(true);
 
                selectedSrcGraphNode = (GraphNode) ((Graph) e.getSource()).getSelection().get(0);
                selectedSrcGraphNode.setBorderWidth(1);
@@ -108,6 +116,7 @@ private void addMouseListenerGraphViewer() {
          public void mouseDoubleClick(MouseEvent e) {
             if (UtilNode.isClassNode(e)) {
             	menuItemDelete.setEnabled(false);
+                menuItemExpand.setEnabled(false);
                System.out.println("double clicked");
                prevSelectedDstGraphNode = selectedDstGraphNode;
                selectedDstGraphNode = (GraphNode) ((Graph) e.getSource()).getSelection().get(0);
@@ -134,6 +143,7 @@ private void addMouseListenerGraphViewer() {
                 * TODO: Class Exercise - Complete
                 */
             	menuItemDelete.setEnabled(false);
+                menuItemExpand.setEnabled(false);
                prevSelectedDstGraphNode = selectedDstGraphNode;
                selectedDstGraphNode = (GraphNode) ((Graph) e.getSource()).getSelection().get(0);
             
@@ -168,6 +178,24 @@ private void addMouseListenerGraphViewer() {
       node.setNodeType(GNodeType.UserDoubleClicked);
    }
    
+
+   private void addSelectionListenerMenuItemExpand() {
+	   SelectionListener menuItemListenerExpand = new SelectionListener() {
+	         @Override
+	         public void widgetSelected(SelectionEvent e) {
+	            System.out.println("[DBG] MenuItem Expand");
+	            MethodAnalyzer analyzer = new MethodAnalyzer();
+	            analyzer.analyze((GMethodNode) selectedGMethodNode);
+	            gViewer.setInput(GModelProvider.instance().getNodes());
+	         }
+
+	         @Override
+	         public void widgetDefaultSelected(SelectionEvent e) {
+	         }
+	      };
+	      menuItemExpand.addSelectionListener(menuItemListenerExpand);
+   }
+
    private void addSelectionListenerMenuItemDelete() {
 	   SelectionListener menuItemListenerDelete = new SelectionListener() {
 	         @Override
