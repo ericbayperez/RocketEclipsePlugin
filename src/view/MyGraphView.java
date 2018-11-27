@@ -26,6 +26,7 @@ import org.eclipse.zest.layouts.LayoutStyles;
 import org.eclipse.zest.layouts.algorithms.RadialLayoutAlgorithm;
 import org.eclipse.zest.layouts.algorithms.TreeLayoutAlgorithm;
 
+import analysis.DeleteAnalyzer;
 import analysis.MoveMethodAnalyzer;
 import analysis.ProjectAnalyzer;
 import graph.model.GClassNode;
@@ -45,7 +46,7 @@ public class MyGraphView {
    private GraphViewer gViewer;
    private int layout = 0;
    private Menu mPopupMenu = null;
-   private MenuItem menuItemMoveMethod = null, menuItemRefresh = null;
+   private MenuItem menuItemMoveMethod = null, menuItemRefresh = null, menuItemDelete = null;
    private GraphNode selectedSrcGraphNode = null, selectedDstGraphNode = null;
    private GraphNode prevSelectedDstGraphNode = null;
 
@@ -75,17 +76,25 @@ public class MyGraphView {
       menuItemRefresh = new MenuItem(mPopupMenu, SWT.CASCADE);
       menuItemRefresh.setText("Refresh");
       addSelectionListenerMenuItemRefresh();
+      
+      menuItemDelete = new MenuItem(mPopupMenu, SWT.CASCADE);
+      menuItemDelete.setText("Delete");
+      menuItemDelete.setEnabled(false);
+      addSelectionListenerMenuItemDelete();
+      
    }
 
-   private void addMouseListenerGraphViewer() {
+private void addMouseListenerGraphViewer() {
       MouseAdapter mouseAdapter = new MouseAdapter() {
          public void mouseDown(MouseEvent e) {
             menuItemMoveMethod.setEnabled(false);
+            menuItemDelete.setEnabled(false);
             resetSelectedSrcGraphNode();
 
             if (UtilNode.isMethodNode(e)) {
                System.out.println("single clicked");
                menuItemMoveMethod.setEnabled(true);
+               menuItemDelete.setEnabled(true);
 
                selectedSrcGraphNode = (GraphNode) ((Graph) e.getSource()).getSelection().get(0);
                selectedSrcGraphNode.setBorderWidth(1);
@@ -98,6 +107,7 @@ public class MyGraphView {
          @Override
          public void mouseDoubleClick(MouseEvent e) {
             if (UtilNode.isClassNode(e)) {
+            	menuItemDelete.setEnabled(false);
                System.out.println("double clicked");
                prevSelectedDstGraphNode = selectedDstGraphNode;
                selectedDstGraphNode = (GraphNode) ((Graph) e.getSource()).getSelection().get(0);
@@ -123,6 +133,7 @@ public class MyGraphView {
                /* 
                 * TODO: Class Exercise - Complete
                 */
+            	menuItemDelete.setEnabled(false);
                prevSelectedDstGraphNode = selectedDstGraphNode;
                selectedDstGraphNode = (GraphNode) ((Graph) e.getSource()).getSelection().get(0);
             
@@ -155,6 +166,37 @@ public class MyGraphView {
       selectedDstGraphNode.setHighlightColor(ColorConstants.blue);
       selectedDstGraphNode.setBorderHighlightColor(ColorConstants.black);
       node.setNodeType(GNodeType.UserDoubleClicked);
+   }
+   
+   private void addSelectionListenerMenuItemDelete() {
+	   SelectionListener menuItemListenerDelete = new SelectionListener() {
+	         @Override
+	         public void widgetSelected(SelectionEvent e) {
+	            if (!isMethodSelected()) {
+	               String msg = "Please select a method node.";
+	               UtilMsg.openWarning(msg);
+	               System.out.println("[DBG] " + msg);
+	               return;
+	            }
+	            System.out.println("[DBG] MenuItem Delete");
+	            DeleteAnalyzer deleteAnalyzer = new DeleteAnalyzer();
+	            deleteAnalyzer.setMethodToBeDeleted((GMethodNode) selectedGMethodNode);
+	            deleteAnalyzer.analyze();
+	            deleteAnalyzer.deleteMethod();
+	            resetSelectedSrcGraphNode();
+	            UtilNode.resetDstNode(selectedDstGraphNode, selectedGClassNode);
+	            syncZestViewAndJavaEditor();
+	         }
+
+	         private boolean isMethodSelected() {
+	            return selectedGMethodNode != null && selectedGMethodNode.getNodeType().equals(GNodeType.UserSelection);
+	         }
+
+	         @Override
+	         public void widgetDefaultSelected(SelectionEvent e) {
+	         }
+	      };
+	      menuItemDelete.addSelectionListener(menuItemListenerDelete);
    }
 
    private void addSelectionListenerMenuItemMoveMethod() {
