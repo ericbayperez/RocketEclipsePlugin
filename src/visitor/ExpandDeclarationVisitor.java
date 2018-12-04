@@ -1,6 +1,9 @@
 package visitor;
 
+import java.util.List;
+
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.IPackageBinding;
@@ -11,6 +14,9 @@ import org.eclipse.jdt.core.dom.PackageDeclaration;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 
 import graph.model.GClassNode;
 import graph.model.GConnection;
@@ -78,11 +84,18 @@ public class ExpandDeclarationVisitor extends ASTVisitor {
 				throw new RuntimeException();
 			}
 			if (methodDecl != null) {
-                for (Object parameter : methodDecl.parameters()) {
-                    VariableDeclaration variableDecl = (VariableDeclaration) parameter;
-                    GNode variableNode = (GNode) insertVariableNode(variableDecl);
-                    addConnection(methodNode, variableNode, variableDecl.getStartPosition());
-                }
+				
+				System.out.println(methodDecl.getBody());
+				System.out.println(methodDecl.getBody().statements());
+				
+				for(Object statement : methodDecl.getBody().statements()) {
+					if(statement instanceof VariableDeclarationStatement) {
+						System.out.println(((VariableDeclarationStatement) statement).fragments().toString());
+	                    VariableDeclaration variableDecl = (VariableDeclaration) (((VariableDeclarationStatement) statement).fragments().get(0));
+	                    GNode variableNode = (GNode) insertVariableNode(variableDecl);
+	                    addConnection(methodNode, variableNode, variableDecl.getStartPosition());
+					}
+				}
             }
 			addConnection(typeNode, methodNode, methodDecl.getStartPosition());
 			return super.visit(methodDecl);
